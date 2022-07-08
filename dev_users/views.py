@@ -5,14 +5,16 @@ from .form import CustomUserCreationForm, ProfileEditForm,SkillForm
 from django.contrib import messages
 from .models import Profile
 from django.contrib.auth.decorators import login_required
-from .utils import searchProfiles
+from .utils import searchProfiles,paginatorProfiles
 
 
 def profiles(request):
     profiles, search_query = searchProfiles(request)
+    custom_range,profiles = paginatorProfiles(request,profiles,10)
     context = {
         'profiles': profiles,
         'search_query':search_query,
+        'custom_range':custom_range,
     }
     return render(request, 'All-profile.html', context)
 
