@@ -2,7 +2,7 @@ from django.shortcuts import render,redirect
 from django.core.paginator import Paginator,EmptyPage,PageNotAnInteger
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from .form import ProjectForm
+from .form import ProjectForm,ReviewForm
 from .models import Project,Tag
 from .utils import projectSearch,paginationProjects
 
@@ -16,10 +16,24 @@ def projects(request):
 
 def single_project(request,pk):
     project = Project.objects.get(id=pk)
+    form = ReviewForm()
+    if request.method == 'POST':
+        form = ReviewForm(request.POST)
+        review = form.save(commit=False)
+        review.project =project
+        review.owner = request.user.profile
+        review.save()
+
+        project.getVoteCount
+
+        messages.success(request,'Your Review was successfully Submitted!')
+        return redirect('single_project',pk=project.id)
+
     tag = project.tags.all()
     context = {
         'project':project,
         'tag': tag,
+        'form':form
     }
     return render(request,'single-project.html',context)
 
