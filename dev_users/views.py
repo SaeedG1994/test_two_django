@@ -1,9 +1,9 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.contrib.auth import login, logout, authenticate
-from .form import CustomUserCreationForm, ProfileEditForm,SkillForm
+from .form import CustomUserCreationForm, ProfileEditForm,SkillForm,MessageForm
 from django.contrib import messages
-from .models import Profile
+from .models import Profile,Message
 from django.contrib.auth.decorators import login_required
 from .utils import searchProfiles,paginatorProfiles
 
@@ -37,17 +37,17 @@ def loginUser(request):
         return redirect('profiles')
 
     if request.method == 'POST':
-        username = request.POST['username']
+        username = request.POST['username'].lower()
         password = request.POST['password']
         try:
             user = User.objects.get(username=username)
         except:
-            messages.error(request, '')
+            messages.error(request, 'Username does not exist')
 
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return redirect(request.GET['next'] if 'next' in request.GET else 'account')
+            return redirect(request.GET['next'] if 'next' in request.GET else 'user_account')
         else:
             messages.error(request, 'username or password is incorrect')
     return render(request, 'login_register.html')
@@ -68,6 +68,7 @@ def registerUser(request):
             user = form.save(commit=False)
             user.username = user.username.lower()
             user.save()
+
             messages.success(request, 'User account was created. Please Confirm your Information')
             login(request, user)
             return redirect('edit_profile')
@@ -128,7 +129,7 @@ def createSkill(request):
     }
     return render(request,'create_Skill_Form.html',context)
 
-
+@login_required(login_url="login_user")
 def updateSkill(request,pk):
     profile = request.user.profile
     skill = profile.skill_set.get(id=pk)
@@ -145,7 +146,7 @@ def updateSkill(request,pk):
     }
     return render(request,'create_Skill_Form.html',context)
 
-
+@login_required(login_url="login_user")
 def deleteSkill(request,pk):
     profile = request.user.profile
     skill =profile.skill_set.get(id=pk)
@@ -157,3 +158,56 @@ def deleteSkill(request,pk):
         'object':skill
     }
     return render(request,'delete_form.html',context)
+
+
+@login_required(login_url="login_user")
+def inbox(request):
+    profile = request.user.profile
+    messageRequests = profile.messages.all()
+    unreadMessage = messageRequests.filter(is_read=False).count()
+    context = {
+        'messageRequests':messageRequests,
+        'unreadMessage':unreadMessage
+    }
+    return render(request,'inbox.html',context)
+
+@login_required(login_url="login_user")
+def viewMessage(request,pk):
+    profile = request.user.profile
+    message = profile.messages.get(id=pk)
+    if message.is_read == False:
+        message.is_read = True
+        message.save()
+    context ={
+        'message':message,
+    }
+    return render(request,'messageView.html',context)
+
+
+def createMessage(request,pk):
+    recipient = Profile.objects.get(id=pk)
+    form = MessageForm()
+
+    try:
+        sender = request.user.profile
+    except:
+        sender = None
+    if request.method == 'POST':
+        form = MessageForm(request.POST)
+        if form.is_valid():
+            message = form.save(commit=False)
+            message.sender = sender
+            message.recipient = recipient
+            if sender:
+                message.name = sender.name
+                message.email = sender.email
+            message.save()
+
+            messages.success(request,'Your Message Successfully Send  !')
+            return redirect('user-profile',pk=recipient.id)
+
+    context= {
+        'recipient':recipient,
+        'form':form,
+    }
+    return render(request, 'message_form.html',context)

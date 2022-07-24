@@ -8,8 +8,9 @@
             <div class="container container--narrow">
                 <div class="hero-section__box">
                     <h2>Search for <span>Projects</span></h2>
-                </div>
 
+                </div>
+{% include 'messages.html' %}
                 <div class="hero-section__search">
                     <form id="searchForm" class="form" action="{% url 'projects' %}" method="get">
                         <div class="form__field">
@@ -22,16 +23,20 @@
                     </form>
                 </div>
             </div>
+
         </section>
+
         <!-- Search Result: DevList -->
         <section class="projectsList">
             <div class="container">
+
                 <div class="grid grid--three">
+
                     {% for project in  projects %}
                         <div class="column">
                             <div class="card project">
                                 <a href="{% url 'single_project' project.id %}" class="project">
-                                    <img class="project__thumbnail" src="{{ project.featured_image.url }}"
+                                    <img class="project__thumbnail" src="{{ project.imageURL }}"
                                          alt="project thumbnail"/>
                                     <div class="card__body">
                                         <h3 class="project__title">{{ project.title }}</h3>
